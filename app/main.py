@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.models import ErrorResponse
+from app.api.endpoints import router as api_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -17,6 +18,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(api_router, prefix="/api/v1")
 
 
 @app.exception_handler(HTTPException)
