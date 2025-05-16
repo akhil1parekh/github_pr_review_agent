@@ -9,5 +9,6 @@ celery
 redis
 langgraph
 pytest
+pytest-cov
 httpx
 PyGithub
