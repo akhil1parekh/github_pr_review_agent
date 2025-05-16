@@ -29,7 +29,8 @@ class Settings(BaseSettings):
 
     # LLM Settings
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY")
-    LLM_MODEL: str = os.environ.get("LLM_MODEL", "gpt-4o")
+    LLM_MODEL: str = os.environ.get("LLM_MODEL", "gpt-4o-2024-11-20")
+    LLM_TEMPERATURE: float = os.environ.get("LLM_TEMPERATURE", 0.7)
 
     @field_validator("GITHUB_TOKEN", "OPENAI_API_KEY")
     def validate_api_keys(cls, v, values, **kwargs):
