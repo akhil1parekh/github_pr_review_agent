@@ -1,0 +1,13 @@
+fastapi[standard]
+uvicorn
+pydantic
+pydantic-settings
+requests
+openai
+python-dotenv
+celery
+redis
+langgraph
+pytest
+httpx
+PyGithub
