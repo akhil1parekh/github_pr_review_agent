@@ -30,6 +30,25 @@ class GitHubTool:
         """Add comment to PR."""
         return github_service.add_pr_comment(repo, pr_number, body)
 
+    @staticmethod
+    def get_pr_head_sha(repo: str, pr_number: int) -> str:
+        """Get the HEAD SHA of the pull request."""
+        return github_service.get_pr_head_sha(repo, pr_number)
+
+    @staticmethod
+    def add_pr_review_comment(
+        repo: str,
+        pr_number: int,
+        commit_sha: str,
+        body: str,
+        path: str,
+        line: int,
+    ) -> Dict[str, Any]:
+        """Add an inline review comment to a pull request."""
+        return github_service.add_pr_review_comment(
+            repo, pr_number, commit_sha, body, path, line
+        )
+
 
 class CodeAnalysisTool:
     """Tool for analyzing code."""

@@ -113,5 +113,38 @@ class GitHubService:
             "updated_at": comment.updated_at.isoformat(),
         }
 
+    def get_pr_head_sha(self, repo_name: str, pr_number: int) -> str:
+        """Get the HEAD SHA of the pull request."""
+        pr = self.get_pull_request(repo_name, pr_number)
+        return pr.head.sha
+
+    def add_pr_review_comment(
+        self,
+        repo_name: str,
+        pr_number: int,
+        commit_sha: str,
+        body: str,
+        path: str,
+        line: int,
+    ) -> Dict[str, Any]:
+        """Add an inline review comment to a pull request."""
+        repo = self.get_repository(repo_name)
+        pr = self.get_pull_request(repo_name, pr_number)
+        commit = repo.get_commit(sha=commit_sha)
+
+        comment = pr.create_review_comment(
+            body=body, commit_id=commit, path=path, line=line
+        )
+
+        return {
+            "id": comment.id,
+            "user": comment.user.login,
+            "body": comment.body,
+            "path": comment.path,
+            "line": comment.line,
+            "created_at": comment.created_at.isoformat(),
+            "updated_at": comment.updated_at.isoformat(),
+        }
+
 
 github_service = GitHubService()
