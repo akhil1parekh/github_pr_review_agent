@@ -54,26 +54,39 @@ class CodeAnalysisTool:
     """Tool for analyzing code."""
 
     @staticmethod
-    def analyze_style(file_content: str, filename: str) -> List[Dict[str, Any]]:
+    def analyze_style(
+        pr_details: Dict[str, Any], patch: str, filename: str
+    ) -> List[Dict[str, Any]]:
         """Analyze code style and formatting."""
-        return llm_service.analyze_code_style(file_content, filename)
+        return llm_service.analyze_code_style(pr_details, patch, filename)
 
     @staticmethod
-    def analyze_bugs(file_content: str, filename: str) -> List[Dict[str, Any]]:
+    def analyze_bugs(
+        pr_details: Dict[str, Any], patch: str, filename: str
+    ) -> List[Dict[str, Any]]:
         """Analyze potential bugs and errors."""
-        return llm_service.analyze_bugs(file_content, filename)
+        return llm_service.analyze_bugs(pr_details, patch, filename)
 
     @staticmethod
-    def analyze_performance(file_content: str, filename: str) -> List[Dict[str, Any]]:
+    def analyze_performance(
+        pr_details: Dict[str, Any], patch: str, filename: str
+    ) -> List[Dict[str, Any]]:
         """Analyze performance issues."""
-        return llm_service.analyze_performance(file_content, filename)
+        return llm_service.analyze_performance(pr_details, patch, filename)
 
     @staticmethod
     def analyze_best_practices(
-        file_content: str, filename: str
+        pr_details: Dict[str, Any], patch: str, filename: str
     ) -> List[Dict[str, Any]]:
         """Analyze adherence to best practices."""
-        return llm_service.analyze_best_practices(file_content, filename)
+        return llm_service.analyze_best_practices(pr_details, patch, filename)
+
+    @staticmethod
+    def analyze_semantic_issues(
+        pr_details: Dict[str, Any], patch: str, filename: str
+    ) -> List[Dict[str, Any]]:
+        """Analyze semantic and logical issues."""
+        return llm_service.analyze_semantic_issues(pr_details, patch, filename)
 
 
 class PlanningTool:

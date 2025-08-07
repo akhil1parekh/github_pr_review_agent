@@ -164,11 +164,12 @@ def test_create_analysis_plan(mock_planning_tool):
 def test_analyze_code_style(mock_code_analysis_tool):
     """Test analyzing code style."""
     state = create_initial_state("owner/repo", 123)
+    state["pr_details"] = {"title": "Test PR", "description": "Test description"}
     state["files_changed"] = [
         {
             "filename": "src/main.py",
             "status": "modified",
-            "content": "def main():\n    print('Hello, world!')",
+            "patch": "@@ -1,1 +1,1 @@\ndef main():\n-    print('Hello, world!')\n+    print(\"Hello, world!\")",
         }
     ]
 
@@ -182,11 +183,12 @@ def test_analyze_code_style(mock_code_analysis_tool):
 def test_analyze_bugs(mock_code_analysis_tool):
     """Test analyzing bugs."""
     state = create_initial_state("owner/repo", 123)
+    state["pr_details"] = {"title": "Test PR", "description": "Test description"}
     state["files_changed"] = [
         {
             "filename": "src/main.py",
             "status": "modified",
-            "content": "def main():\n    print('Hello, world!')",
+            "patch": "@@ -1,1 +1,1 @@\ndef main():\n-    print('Hello, world!')\n+    print(\"Hello, world!\")",
         }
     ]
 
@@ -200,11 +202,12 @@ def test_analyze_bugs(mock_code_analysis_tool):
 def test_analyze_performance(mock_code_analysis_tool):
     """Test analyzing performance."""
     state = create_initial_state("owner/repo", 123)
+    state["pr_details"] = {"title": "Test PR", "description": "Test description"}
     state["files_changed"] = [
         {
             "filename": "src/main.py",
             "status": "modified",
-            "content": "def main():\n    print('Hello, world!')",
+            "patch": "@@ -1,1 +1,1 @@\ndef main():\n-    print('Hello, world!')\n+    print(\"Hello, world!\")",
         }
     ]
 
@@ -216,11 +219,12 @@ def test_analyze_performance(mock_code_analysis_tool):
 def test_analyze_best_practices(mock_code_analysis_tool):
     """Test analyzing best practices."""
     state = create_initial_state("owner/repo", 123)
+    state["pr_details"] = {"title": "Test PR", "description": "Test description"}
     state["files_changed"] = [
         {
             "filename": "src/main.py",
             "status": "modified",
-            "content": "def main():\n    print('Hello, world!')",
+            "patch": "@@ -1,1 +1,1 @@\ndef main():\n-    print('Hello, world!')\n+    print(\"Hello, world!\")",
         }
     ]
 
