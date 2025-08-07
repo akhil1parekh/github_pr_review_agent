@@ -48,6 +48,12 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "ok"}
+
+
 @app.get("/")
 async def root():
     return {

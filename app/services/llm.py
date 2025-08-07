@@ -80,34 +80,44 @@ class LLMService:
             return [step.strip() for step in response.split("\n") if step.strip()]
 
     def analyze_code_style(
-        self, file_content: str, filename: str
+        self, pr_details: Dict[str, Any], patch: str, filename: str
     ) -> List[Dict[str, Any]]:
         """Analyze code style and formatting issues."""
         system_prompt = """
-        You are an expert code reviewer focusing on code style and formatting. 
-        Analyze the provided code and identify style issues such as:
-        - Inconsistent naming conventions
-        - Improper indentation
-        - Line length issues
-        - Missing or inconsistent comments
-        - Inconsistent formatting
-        
-        Return a list of issues in JSON format, where each issue has:
-        - line: the line number (int)
-        - issue: description of the issue (string)
-        - severity: "low", "medium", or "high" (string)
-        - suggestion: how to fix the issue (string)
-        
-        If no issues are found, return an empty list.
+        You are an expert Python code reviewer, specializing in PEP 8 and common style conventions.
+        Analyze the provided code, which is part of a GitHub pull request.
+        Identify any style and formatting issues, such as:
+        - Naming conventions (snake_case for variables and functions, PascalCase for classes).
+        - Improper indentation (must be 4 spaces per level).
+        - Line length (should not exceed 88 characters).
+        - Incorrect import order.
+        - Missing or inconsistent docstrings and comments.
+        - Inconsistent use of quotes (single vs. double).
+
+        Return a list of issues in JSON format. Each issue must be a dictionary with the following keys:
+        - "line": The line number (int) where the issue occurs.
+        - "type": "style" (string).
+        - "description": A clear and concise description of the style issue (string).
+        - "severity": "low", "medium", or "high" (string).
+        - "suggestion": A concrete, actionable suggestion for how to fix the issue. If possible, provide a code snippet using GitHub's suggestion format.
+
+        Example of a suggestion with a code snippet:
+        "suggestion": "Rename 'myVar' to 'my_var' to follow snake_case convention.\\n```suggestion\\nmy_var = ...\\n```"
+
+        If no issues are found, return an empty JSON list: [].
         """
 
         prompt = f"""
-        Analyze the following code for style and formatting issues:
+        Analyze the following code patch for style and formatting issues, considering the context of the pull request.
+
+        PR Title: {pr_details.get('title', 'N/A')}
+        PR Description: {pr_details.get('description', 'N/A')}
         
         Filename: {filename}
         
-        ```
-        {file_content}
+        Patch (diff format):
+        ```diff
+        {patch}
         ```
         
         Return a list of issues in JSON format.
@@ -126,34 +136,45 @@ class LLMService:
         except json.JSONDecodeError:
             return []
 
-    def analyze_bugs(self, file_content: str, filename: str) -> List[Dict[str, Any]]:
+    def analyze_bugs(
+        self, pr_details: Dict[str, Any], patch: str, filename: str
+    ) -> List[Dict[str, Any]]:
         """Analyze potential bugs or errors."""
         system_prompt = """
-        You are an expert code reviewer focusing on identifying potential bugs and errors. 
-        Analyze the provided code and identify issues such as:
-        - Logical errors
-        - Off-by-one errors
-        - Null/undefined references
-        - Race conditions
-        - Memory leaks
-        - Exception handling issues
-        
-        Return a list of issues in JSON format, where each issue has:
-        - line: the line number (int)
-        - issue: description of the issue (string)
-        - severity: "low", "medium", or "high" (string)
-        - suggestion: how to fix the issue (string)
-        
-        If no issues are found, return an empty list.
+        You are an expert Python code reviewer with a focus on identifying potential bugs and runtime errors.
+        Analyze the provided code, which is part of a GitHub pull request.
+        Look for issues such as:
+        - Logical errors that could lead to incorrect output.
+        - Off-by-one errors in loops or indexing.
+        - Null or `None` reference errors.
+        - Unhandled exceptions or inadequate error handling.
+        - Race conditions or other concurrency issues.
+        - Mismatched variable types or unsafe type casting.
+
+        Return a list of issues in JSON format. Each issue must be a dictionary with the following keys:
+        - "line": The line number (int) where the bug is likely to occur.
+        - "type": "bug" (string).
+        - "description": A clear and concise description of the potential bug (string).
+        - "severity": "low", "medium", or "high" (string), based on the potential impact.
+        - "suggestion": A concrete, actionable suggestion for how to fix the bug. Provide a code snippet with the suggested fix.
+
+        Example of a suggestion:
+        "suggestion": "Add a null check before accessing the 'user' object.\\n```suggestion\\nif user:\\n    return user.name\\n```"
+
+        If no issues are found, return an empty JSON list: [].
         """
 
         prompt = f"""
-        Analyze the following code for potential bugs and errors:
+        Analyze the following code patch for potential bugs and errors, considering the context of the pull request.
+
+        PR Title: {pr_details.get('title', 'N/A')}
+        PR Description: {pr_details.get('description', 'N/A')}
         
         Filename: {filename}
         
-        ```
-        {file_content}
+        Patch (diff format):
+        ```diff
+        {patch}
         ```
         
         Return a list of issues in JSON format.
@@ -173,34 +194,43 @@ class LLMService:
             return []
 
     def analyze_performance(
-        self, file_content: str, filename: str
+        self, pr_details: Dict[str, Any], patch: str, filename: str
     ) -> List[Dict[str, Any]]:
         """Analyze performance issues."""
         system_prompt = """
-        You are an expert code reviewer focusing on performance optimization. 
-        Analyze the provided code and identify issues such as:
-        - Inefficient algorithms
-        - Unnecessary computations
-        - Redundant operations
-        - Inefficient data structures
-        - Resource leaks
-        
-        Return a list of issues in JSON format, where each issue has:
-        - line: the line number (int)
-        - issue: description of the issue (string)
-        - severity: "low", "medium", or "high" (string)
-        - suggestion: how to fix the issue (string)
-        
-        If no issues are found, return an empty list.
+        You are an expert Python code reviewer with a deep understanding of performance optimization.
+        Analyze the provided code, which is part of a GitHub pull request.
+        Identify performance issues such as:
+        - Inefficient algorithms or data structures (e.g., using a list for frequent lookups instead of a set or dict).
+        - Unnecessary computations inside loops.
+        - Redundant database queries or API calls.
+        - Memory-intensive operations that could be optimized (e.g., using generators).
+        - Blocking I/O operations that could be made asynchronous.
+
+        Return a list of issues in JSON format. Each issue must be a dictionary with the following keys:
+        - "line": The line number (int) of the performance bottleneck.
+        - "type": "performance" (string).
+        - "description": A clear and concise description of the performance issue (string).
+        - "severity": "low", "medium", or "high" (string), based on the potential performance gain.
+        - "suggestion": A concrete, actionable suggestion for how to optimize the code. Provide a refactored code snippet.
+
+        Example of a suggestion:
+        "suggestion": "Using a set for 'items_to_check' will provide much faster lookups than a list.\\n```suggestion\\nitems_to_check = {1, 2, 3}\\nif item in items_to_check:\\n    ...\\n```"
+
+        If no issues are found, return an empty JSON list: [].
         """
 
         prompt = f"""
-        Analyze the following code for performance issues:
+        Analyze the following code patch for performance issues, considering the context of the pull request.
+
+        PR Title: {pr_details.get('title', 'N/A')}
+        PR Description: {pr_details.get('description', 'N/A')}
         
         Filename: {filename}
         
-        ```
-        {file_content}
+        Patch (diff format):
+        ```diff
+        {patch}
         ```
         
         Return a list of issues in JSON format.
@@ -220,40 +250,105 @@ class LLMService:
             return []
 
     def analyze_best_practices(
-        self, file_content: str, filename: str
+        self, pr_details: Dict[str, Any], patch: str, filename: str
     ) -> List[Dict[str, Any]]:
         """Analyze adherence to best practices."""
         system_prompt = """
-        You are an expert code reviewer focusing on best practices. 
-        Analyze the provided code and identify issues such as:
-        - Lack of modularity
-        - Poor abstraction
-        - Inadequate error handling
-        - Security vulnerabilities
-        - Maintainability issues
-        
-        Return a list of issues in JSON format, where each issue has:
-        - line: the line number (int)
-        - issue: description of the issue (string)
-        - severity: "low", "medium", or "high" (string)
-        - suggestion: how to fix the issue (string)
-        
-        If no issues are found, return an empty list.
+        You are a senior Python engineer focusing on software architecture and best practices.
+        Analyze the provided code, which is part of a GitHub pull request.
+        Identify issues related to:
+        - Modularity and separation of concerns.
+        - Readability and maintainability.
+        - Proper use of design patterns.
+        - Security vulnerabilities (e.g., hardcoded secrets, injection risks).
+        - Adherence to the principle of least astonishment.
+        - Testability of the code.
+
+        Return a list of issues in JSON format. Each issue must be a dictionary with the following keys:
+        - "line": The line number (int) where the issue is located.
+        - "type": "best_practice" (string).
+        - "description": A clear and concise description of the best practice violation (string).
+        - "severity": "low", "medium", or "high" (string).
+        - "suggestion": A concrete, actionable suggestion for how to refactor the code to follow best practices.
+
+        Example of a suggestion:
+        "suggestion": "Instead of a hardcoded API key, use a configuration service or environment variable to manage secrets."
+
+        If no issues are found, return an empty JSON list: [].
         """
 
         prompt = f"""
-        Analyze the following code for adherence to best practices:
-        
+        Analyze the following code patch for best practices, considering the context of the pull request.
+
+        PR Title: {pr_details.get('title', 'N/A')}
+        PR Description: {pr_details.get('description', 'N/A')}
+
         Filename: {filename}
         
-        ```
-        {file_content}
+        Patch (diff format):
+        ```diff
+        {patch}
         ```
         
         Return a list of issues in JSON format.
         """
 
         response = self.generate_response(prompt, system_prompt, temperature=0.3)
+
+        try:
+            issues = json.loads(response)
+            if isinstance(issues, list):
+                return issues
+            elif isinstance(issues, dict) and "issues" in issues:
+                return issues["issues"]
+            else:
+                return []
+        except json.JSONDecodeError:
+            return []
+
+    def analyze_semantic_issues(
+        self, pr_details: Dict[str, Any], patch: str, filename: str
+    ) -> List[Dict[str, Any]]:
+        """Analyze semantic and logical issues."""
+        system_prompt = """
+        You are a senior Python developer with strong logical reasoning skills.
+        Your task is to analyze the provided code patch in the context of the pull request's goal and identify semantic or logical issues.
+        A semantic issue is when the code is syntactically correct but does not do what it is intended to do.
+        Use the PR title and description to understand the intended purpose of the code.
+
+        Look for issues like:
+        - The code does not correctly implement the feature or fix described in the PR description.
+        - The logic contains flaws that will lead to unexpected behavior.
+        - Misused variables, functions, or libraries.
+        - The code is correct but overly complex and could be simplified.
+
+        Return a list of issues in JSON format. Each issue must be a dictionary with the following keys:
+        - "line": The line number (int) where the semantic issue is located.
+        - "type": "semantic" (string).
+        - "description": A clear and concise description of the semantic issue (string).
+        - "severity": "low", "medium", or "high" (string).
+        - "suggestion": A concrete, actionable suggestion for how to correct the logic or implement the feature correctly.
+
+        If no issues are found, return an empty JSON list: [].
+        """
+
+        prompt = f"""
+        Analyze the following code patch for semantic and logical issues, considering the context of the pull request.
+
+        PR Title: {pr_details.get('title', 'N/A')}
+        PR Description: {pr_details.get('description', 'N/A')}
+        
+        Filename: {filename}
+        
+        Patch (diff format):
+        ```diff
+        {patch}
+        ```
+        
+        Return a list of issues in JSON format.
+        """
+
+        response = self.generate_response(prompt, system_prompt, temperature=0.4)
 
         try:
             issues = json.loads(response)

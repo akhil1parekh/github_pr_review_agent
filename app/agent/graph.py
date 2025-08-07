@@ -68,11 +68,12 @@ def analyze_code_style(state: AgentState) -> AgentState:
     """Analyze code style and formatting."""
     try:
         style_issues = []
+        pr_details = state["pr_details"]
 
         for file in state["files_changed"]:
-            if file["status"] != "removed" and file["content"]:
+            if file["patch"] and file["status"] != "removed":
                 issues = code_analysis_tool.analyze_style(
-                    file["content"], file["filename"]
+                    pr_details, file["patch"], file["filename"]
                 )
                 for issue in issues:
                     issue["file"] = file["filename"]
@@ -90,11 +91,12 @@ def analyze_bugs(state: AgentState) -> AgentState:
     """Analyze potential bugs and errors."""
     try:
         bugs = []
+        pr_details = state["pr_details"]
 
         for file in state["files_changed"]:
-            if file["status"] != "removed" and file["content"]:
+            if file["patch"] and file["status"] != "removed":
                 issues = code_analysis_tool.analyze_bugs(
-                    file["content"], file["filename"]
+                    pr_details, file["patch"], file["filename"]
                 )
                 for issue in issues:
                     issue["file"] = file["filename"]
@@ -112,11 +114,12 @@ def analyze_performance(state: AgentState) -> AgentState:
     """Analyze performance issues."""
     try:
         performance_issues = []
+        pr_details = state["pr_details"]
 
         for file in state["files_changed"]:
-            if file["status"] != "removed" and file["content"]:
+            if file["patch"] and file["status"] != "removed":
                 issues = code_analysis_tool.analyze_performance(
-                    file["content"], file["filename"]
+                    pr_details, file["patch"], file["filename"]
                 )
                 for issue in issues:
                     issue["file"] = file["filename"]
@@ -134,11 +137,12 @@ def analyze_best_practices(state: AgentState) -> AgentState:
     """Analyze adherence to best practices."""
     try:
         best_practices_issues = []
+        pr_details = state["pr_details"]
 
         for file in state["files_changed"]:
-            if file["status"] != "removed" and file["content"]:
+            if file["patch"] and file["status"] != "removed":
                 issues = code_analysis_tool.analyze_best_practices(
-                    file["content"], file["filename"]
+                    pr_details, file["patch"], file["filename"]
                 )
                 for issue in issues:
                     issue["file"] = file["filename"]
@@ -149,6 +153,69 @@ def analyze_best_practices(state: AgentState) -> AgentState:
     except Exception as e:
         state["status"] = "failed"
         state["error"] = f"Error analyzing best practices: {str(e)}"
+        return state
+
+
+def analyze_semantic_issues(state: AgentState) -> AgentState:
+    """Analyze semantic and logical issues."""
+    try:
+        semantic_issues = []
+        pr_details = state["pr_details"]
+
+        for file in state["files_changed"]:
+            if file["patch"] and file["status"] != "removed":
+                issues = code_analysis_tool.analyze_semantic_issues(
+                    pr_details, file["patch"], file["filename"]
+                )
+                for issue in issues:
+                    issue["file"] = file["filename"]
+                semantic_issues.extend(issues)
+
+        state["analysis_results"]["semantic_issues"] = semantic_issues
+        return state
+    except Exception as e:
+        state["status"] = "failed"
+        state["error"] = f"Error analyzing semantic issues: {str(e)}"
+        return state
+
+
+def post_review_comments(state: AgentState) -> AgentState:
+    """Post review comments to the GitHub PR."""
+    try:
+        repo = state["pr_details"]["repo"]
+        pr_number = state["pr_details"]["pr_number"]
+
+        # Get the latest commit SHA
+        commit_sha = github_tool.get_pr_head_sha(repo, pr_number)
+
+        # Flatten all issues from the analysis results
+        all_issues = []
+        for issue_category in state["analysis_results"].values():
+            all_issues.extend(issue_category)
+
+        # Post a comment for each issue
+        for issue in all_issues:
+            if "file" in issue and "line" in issue and "description" in issue:
+                # Format a rich comment body
+                body = f"""**{issue.get('type', 'issue').capitalize()} ({issue.get('severity', 'low')} severity):**
+
+{issue['description']}
+"""
+                if "suggestion" in issue:
+                    body += f"\\n**Suggestion:**\\n```suggestion\\n{issue['suggestion']}\\n```"
+
+                github_tool.add_pr_review_comment(
+                    repo=repo,
+                    pr_number=pr_number,
+                    commit_sha=commit_sha,
+                    body=body,
+                    path=issue["file"],
+                    line=issue["line"],
+                )
+        return state
+    except Exception as e:
+        state["status"] = "failed"
+        state["error"] = f"Error posting review comments: {str(e)}"
         return state
 
 
@@ -177,6 +244,8 @@ def build_graph() -> StateGraph:
     graph.add_node("analyze_bugs", analyze_bugs)
     graph.add_node("analyze_performance", analyze_performance)
     graph.add_node("analyze_best_practices", analyze_best_practices)
+    graph.add_node("analyze_semantic_issues", analyze_semantic_issues)
+    graph.add_node("post_review_comments", post_review_comments)
     graph.add_node("create_summary", create_summary)
 
     # Connect processing nodes back to router
@@ -186,7 +255,9 @@ def build_graph() -> StateGraph:
     graph.add_edge("analyze_code_style", "analyze_bugs")
     graph.add_edge("analyze_bugs", "analyze_performance")
     graph.add_edge("analyze_performance", "analyze_best_practices")
-    graph.add_edge("analyze_best_practices", "create_summary")
+    graph.add_edge("analyze_best_practices", "analyze_semantic_issues")
+    graph.add_edge("analyze_semantic_issues", "post_review_comments")
+    graph.add_edge("post_review_comments", "create_summary")
     graph.add_edge("create_summary", END)
 
     return graph
@@ -207,6 +278,7 @@ def create_initial_state(repo: str, pr_number: int) -> AgentState:
             "bugs": [],
             "performance_issues": [],
             "best_practices": [],
+            "semantic_issues": [],
         },
         "summary": "",
         "status": "not_started",
